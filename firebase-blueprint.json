@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "FEELKAR user, creator, business, or admin profile.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "displayName": { "type": "string" },
+        "bio": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "followersCount": { "type": "integer" },
+        "followingCount": { "type": "integer" },
+        "isVerified": { "type": "boolean" },
+        "isBusiness": { "type": "boolean" },
+        "isRestricted": { "type": "boolean" },
+        "isPrivateAccount": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "username", "displayName", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Photo/video social feed post with hashtags, tags, and optional sponsored product link.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "caption": { "type": "string" },
+        "hashtags": { "type": "array" },
+        "taggedUserIds": { "type": "array" },
+        "mediaType": { "type": "string", "enum": ["IMAGE", "VIDEO"] },
+        "mediaUrl": { "type": "string" },
+        "likesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "repostsCount": { "type": "integer" },
+        "isSponsored": { "type": "boolean" },
+        "sponsoredProductId": { "type": "string" },
+        "isRemoved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "caption", "mediaType", "createdAt"]
+    },
+    "Reel": {
+      "title": "Reel",
+      "description": "Short vertical video reel with filter preset and trim bounds.",
+      "type": "object",
+      "properties": {
+        "creatorId": { "type": "string" },
+        "caption": { "type": "string" },
+        "audioTitle": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "filterName": { "type": "string", "enum": ["ORIGINAL", "WARM", "NOIR", "VIVID", "COOL"] },
+        "likesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "sharesCount": { "type": "integer" },
+        "isSponsored": { "type": "boolean" },
+        "sponsoredProductId": { "type": "string" },
+        "isRemoved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["creatorId", "videoUrl", "filterName", "createdAt"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Ephemeral 24-hour photo or video story.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["IMAGE", "VIDEO"] },
+        "mediaUrl": { "type": "string" },
+        "privacy": { "type": "string", "enum": ["PUBLIC", "CLOSE_FRIENDS"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "mediaType", "privacy", "createdAt", "expiresAt"]
+    },
+    "LiveStream": {
+      "title": "LiveStream",
+      "description": "Active live broadcast with viewer count and host moderation flags.",
+      "type": "object",
+      "properties": {
+        "hostId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "viewerCount": { "type": "integer" },
+        "isLive": { "type": "boolean" },
+        "isSlowMode": { "type": "boolean" },
+        "startedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["hostId", "title", "isLive", "startedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "1:1 private or group conversation with disappearing timer and request state.",
+      "type": "object",
+      "properties": {
+        "participantUids": { "type": "array" },
+        "isGroup": { "type": "boolean" },
+        "isMessageRequest": { "type": "boolean" },
+        "disappearingSeconds": { "type": "integer" },
+        "lastMessagePreview": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participantUids", "isGroup", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message supporting text, image, video, voice note, and story reply.",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "participantUids": { "type": "array" },
+        "type": { "type": "string", "enum": ["TEXT", "IMAGE", "VIDEO", "VOICE", "STORY_REPLY", "PRODUCT_INQUIRY"] },
+        "text": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversationId", "senderId", "participantUids", "type", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Creator or business catalog product for promotions.",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priceUsd": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "impressionsCount": { "type": "integer" },
+        "clicksCount": { "type": "integer" },
+        "inquiriesCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "title", "priceUsd", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Content or promotion moderation report for Admin Dashboard review.",
+      "type": "object",
+      "properties": {
+        "reporterId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["POST", "REEL", "LIVE", "PRODUCT", "USER"] },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reporterId", "targetType", "targetId", "reason", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "Public creator/business profile" },
+    "/users/{userId}/private/{docId}": { "schema": "User", "description": "Private PII (email, blocked list)" },
+    "/posts/{postId}": { "schema": "Post", "description": "Social feed posts" },
+    "/reels/{reelId}": { "schema": "Reel", "description": "Short vertical video reels" },
+    "/stories/{storyId}": { "schema": "Story", "description": "24-hour ephemeral stories" },
+    "/live_streams/{streamId}": { "schema": "LiveStream", "description": "Live broadcasts" },
+    "/conversations/{conversationId}": { "schema": "Conversation", "description": "Private & group chats" },
+    "/conversations/{conversationId}/messages/{messageId}": { "schema": "Message", "description": "Chat messages" },
+    "/products/{productId}": { "schema": "Product", "description": "Promoted product catalog" },
+    "/reports/{reportId}": { "schema": "Report", "description": "Admin moderation queue" }
+  }
+}

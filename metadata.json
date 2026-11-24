@@ -1,0 +1,6 @@
+{
+  "name": "FEELKAR",
+  "description": "FEELKAR is a modern social media Android app featuring Live Streaming, Reels, Posts, 24h Stories, Real-time Messaging & Private Chats, Creator Product Promotions, and Admin Moderation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

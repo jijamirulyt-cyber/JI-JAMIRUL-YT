@@ -1,0 +1,216 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isNotRestricted() {
+      return isSignedIn() && (
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isRestricted != true
+      );
+    }
+
+    function isValidUser(data) {
+      return data.userId is string &&
+             data.username is string && data.username.size() >= 3 && data.username.size() <= 30 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 50 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 240)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidPost(data) {
+      return data.authorId is string &&
+             data.caption is string && data.caption.size() <= 2000 &&
+             data.mediaType in ['IMAGE', 'VIDEO'] &&
+             data.likesCount is int && data.likesCount >= 0 &&
+             data.commentsCount is int && data.commentsCount >= 0 &&
+             data.repostsCount is int && data.repostsCount >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidReel(data) {
+      return data.creatorId is string &&
+             data.caption is string && data.caption.size() <= 1000 &&
+             data.videoUrl is string && data.videoUrl.size() <= 1000 &&
+             data.filterName in ['ORIGINAL', 'WARM', 'NOIR', 'VIVID', 'COOL'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidStory(data) {
+      return data.authorId is string &&
+             data.mediaType in ['IMAGE', 'VIDEO'] &&
+             data.privacy in ['PUBLIC', 'CLOSE_FRIENDS'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.expiresAt is timestamp && data.expiresAt > data.createdAt;
+    }
+
+    function isValidMessage(data) {
+      return data.senderId is string &&
+             data.participantUids is list && data.participantUids.size() >= 2 && data.participantUids.size() <= 50 &&
+             data.type in ['TEXT', 'IMAGE', 'VIDEO', 'VOICE', 'STORY_REPLY', 'PRODUCT_INQUIRY'] &&
+             (!('text' in data) || (data.text is string && data.text.size() <= 2000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidProduct(data) {
+      return data.sellerId is string &&
+             data.title is string && data.title.size() >= 2 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() <= 1000 &&
+             data.priceUsd is number && data.priceUsd >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidReport(data) {
+      return data.reporterId is string &&
+             data.targetType in ['POST', 'REEL', 'LIVE', 'PRODUCT', 'USER'] &&
+             data.targetId is string && data.targetId.size() <= 128 &&
+             data.reason is string && data.reason.size() >= 3 && data.reason.size() <= 500 &&
+             data.status in ['OPEN', 'RESOLVED', 'DISMISSED'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().isVerified == false &&
+                       incoming().isRestricted == false &&
+                       isValidUser(incoming());
+      allow update: if isSignedIn() && isValidId(userId) && isValidUser(incoming()) && (
+        isAdmin() ||
+        (request.auth.uid == userId &&
+         incoming().userId == existing().userId &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().isVerified == existing().isVerified &&
+         incoming().isRestricted == existing().isRestricted &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['username', 'displayName', 'bio', 'avatarUrl', 'isBusiness', 'isPrivateAccount', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+
+      match /private/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /posts/{postId} {
+      allow get: if isSignedIn() && isValidId(postId) && existing().isRemoved != true;
+      allow list: if isSignedIn() && existing().isRemoved != true;
+      allow create: if isNotRestricted() && isValidId(postId) &&
+                       incoming().authorId == request.auth.uid &&
+                       incoming().isRemoved == false &&
+                       isValidPost(incoming());
+      allow update: if isSignedIn() && isValidId(postId) && isValidPost(incoming()) && (
+        isAdmin() ||
+        (existing().authorId == request.auth.uid &&
+         incoming().authorId == existing().authorId &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['caption', 'hashtags', 'taggedUserIds'])) ||
+        (incoming().authorId == existing().authorId &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'repostsCount']))
+      );
+      allow delete: if isSignedIn() && isValidId(postId) && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    match /reels/{reelId} {
+      allow get, list: if isSignedIn() && existing().isRemoved != true;
+      allow create: if isNotRestricted() && isValidId(reelId) &&
+                       incoming().creatorId == request.auth.uid &&
+                       incoming().isRemoved == false &&
+                       isValidReel(incoming());
+      allow update: if isSignedIn() && isValidId(reelId) && isValidReel(incoming()) && (
+        isAdmin() ||
+        (incoming().creatorId == existing().creatorId &&
+         incoming().createdAt == existing().createdAt &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'sharesCount']))
+      );
+      allow delete: if isSignedIn() && isValidId(reelId) && (existing().creatorId == request.auth.uid || isAdmin());
+    }
+
+    match /stories/{storyId} {
+      allow get, list: if isSignedIn() && existing().expiresAt > request.time;
+      allow create: if isNotRestricted() && isValidId(storyId) &&
+                       incoming().authorId == request.auth.uid &&
+                       isValidStory(incoming());
+      allow delete: if isSignedIn() && isValidId(storyId) && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    match /live_streams/{streamId} {
+      allow get, list: if isSignedIn();
+      allow create: if isNotRestricted() && isValidId(streamId) && incoming().hostId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(streamId) && (
+        isAdmin() ||
+        existing().hostId == request.auth.uid ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['viewerCount'])
+      );
+      allow delete: if isSignedIn() && isValidId(streamId) && (existing().hostId == request.auth.uid || isAdmin());
+    }
+
+    match /conversations/{conversationId} {
+      allow get, list: if isSignedIn() && request.auth.uid in existing().participantUids;
+      allow create: if isNotRestricted() && isValidId(conversationId) &&
+                       request.auth.uid in incoming().participantUids;
+      allow update: if isSignedIn() && isValidId(conversationId) &&
+                       request.auth.uid in existing().participantUids;
+
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn() && request.auth.uid in existing().participantUids;
+        allow create: if isNotRestricted() && isValidId(messageId) &&
+                         incoming().senderId == request.auth.uid &&
+                         request.auth.uid in incoming().participantUids &&
+                         isValidMessage(incoming());
+      }
+    }
+
+    match /products/{productId} {
+      allow get, list: if isSignedIn();
+      allow create: if isNotRestricted() && isValidId(productId) &&
+                       incoming().sellerId == request.auth.uid &&
+                       isValidProduct(incoming());
+      allow update: if isSignedIn() && isValidId(productId) && isValidProduct(incoming()) && (
+        isAdmin() ||
+        existing().sellerId == request.auth.uid ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['impressionsCount', 'clicksCount', 'inquiriesCount'])
+      );
+      allow delete: if isSignedIn() && isValidId(productId) && (existing().sellerId == request.auth.uid || isAdmin());
+    }
+
+    match /reports/{reportId} {
+      allow get, list: if isAdmin() || (isSignedIn() && existing().reporterId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(reportId) &&
+                       incoming().reporterId == request.auth.uid &&
+                       incoming().status == 'OPEN' &&
+                       isValidReport(incoming());
+      allow update: if isAdmin() && isValidId(reportId) && isValidReport(incoming());
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list, write: if false;
+    }
+  }
+}

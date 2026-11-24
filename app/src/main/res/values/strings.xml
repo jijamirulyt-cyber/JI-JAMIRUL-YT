@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">FEELKAR</string>
+    <string name="tagline">Share moments, go live, promote creators</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_reels">Reels</string>
+    <string name="nav_create">Create</string>
+    <string name="nav_messages">Messages</string>
+    <string name="nav_profile">Profile</string>
+    <string name="action_sign_in">Sign In</string>
+    <string name="action_create_account">Create Account</string>
+    <string name="action_go_live">Go Live</string>
+    <string name="action_contact_seller">Contact Seller</string>
+    <string name="label_sponsored">Sponsored</string>
+    <string name="label_live">LIVE</string>
+    <string name="label_admin_dashboard">Admin Dashboard</string>
+    <string name="label_explore">Explore</string>
+    <string name="label_notifications">Notifications</string>
+</resources>
